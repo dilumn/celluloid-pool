@@ -21,15 +21,8 @@ end
 $CELLULOID_DEBUG = true
 
 require "celluloid/probe"
-require "rspec/log_split"
 
 Celluloid.shutdown_timeout = 1
-
-=begin
-logfile = File.open(File.expand_path("../../log/test.log", __FILE__), 'a')
-logfile.sync = true
-Celluloid.logger = Logger.new(logfile)
-=end
 
 Dir["./spec/support/*.rb"].map { |f| require f }
 
@@ -37,9 +30,6 @@ RSpec.configure do |config|
   config.filter_run focus: true
   config.run_all_when_everything_filtered = true
   config.disable_monkey_patching!
-
-  config.log_split_dir = File.expand_path("../../log/#{Time.now.iso8601}", __FILE__)
-  config.log_split_module = Celluloid
 
   config.around do |ex|
     Celluloid.actor_system = nil
@@ -79,8 +69,4 @@ RSpec.configure do |config|
     example.run
   end
 
-  #   # Must be *after* the around hook above
-  #   require 'rspec/retry'
-  #   config.verbose_retry = true
-  #   config.default_sleep_interval = 3
 end
