@@ -1,48 +1,6 @@
 RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
-  class ExampleError < StandardError; end
 
-  class MyWorker
-    include Celluloid
-
-    def process(queue = nil)
-      if queue
-        queue << :done
-      else
-        :done
-      end
-    end
-
-    def sleepy_work
-      t = Time.now.to_f
-      sleep 0.25
-      t
-    end
-
-    def sleepier_work
-      sleep 1.0
-      :worky
-    end
-
-    def crash
-      fail ExampleError, "zomgcrash"
-    end
-
-    protected
-
-    def a_protected_method
-    end
-
-    private
-
-    def a_private_method
-    end
-  end
-
-  def test_concurrency_of(pool)
-    baseline = Time.now.to_f
-    values = 10.times.map { pool.future.sleepy_work }.map(&:value)
-    values.select { |t| t - baseline < 0.1 }.length
-  end
+  let(:logger) { Specs::FakeLogger.current }
 
   context "when auditing actors directly, whether they are idle or not" do
     let(:size) { SupervisionContainerHelper::SIZE }
@@ -71,11 +29,12 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
     end
   end
 
-  subject { MyWorker.pool }
+  subject { MyPoolWorker.pool }
 
   let(:crashes) { [] }
 
   before { allow(Celluloid::Internals::Logger).to receive(:crash) { |*args| crashes << args } }
+
   after { fail "Unexpected crashes: #{crashes.inspect}" unless crashes.empty? }
 
   it "processes work units synchronously" do
@@ -88,9 +47,9 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
     expect(queue.pop).to be :done
   end
 
-  it "handles crashes" do
-    allow(Celluloid::Internals::Logger).to receive(:crash)
-    expect { subject.crash }.to raise_error(ExampleError)
+  it "handles crashes" do    
+    allow(logger).to receive(:crash).with("Actor crashed!", ExamplePoolError)
+    expect { subject.crash }.to raise_error(ExamplePoolError)
     expect(subject.process).to be :done
   end
 
@@ -118,7 +77,7 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
   context "allows single worker pools" do
     let(:initial_size) { 1 }
 
-    subject { MyWorker.pool size: initial_size }
+    subject { MyPoolWorker.pool size: initial_size }
 
     it "properly" do
       expect(test_concurrency_of(subject)).to eq(initial_size)
@@ -127,7 +86,7 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
     context "and resizes properly" do
       let(:initial_size) { 1 } # anything other than 2 or 4 too big on Travis
 
-      subject { MyWorker.pool size: initial_size }
+      subject { MyPoolWorker.pool size: initial_size }
 
       it "should adjust the pool size up" do
         expect(test_concurrency_of(subject)).to eq(initial_size)
@@ -151,7 +110,7 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
   context "#size=" do
     let(:initial_size) { 3 } # anything other than 2 or 4 too big on Travis
 
-    subject { MyWorker.pool size: initial_size }
+    subject { MyPoolWorker.pool size: initial_size }
 
     it "should adjust the pool size up" do
       expect(test_concurrency_of(subject)).to eq(initial_size)
@@ -172,7 +131,7 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
   end
 
   context "when called synchronously" do
-    subject { MyWorker.pool }
+    subject { MyPoolWorker.pool }
 
     it { is_expected.to respond_to(:process) }
     it { is_expected.to respond_to(:inspect) }
@@ -189,7 +148,7 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
   end
 
   context "when called asynchronously" do
-    subject { MyWorker.pool.async }
+    subject { MyPoolWorker.pool.async }
 
     context "with incorrect invocation" do
       let(:logger) { double(:logger) }

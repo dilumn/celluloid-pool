@@ -27,7 +27,7 @@ module Celluloid
         end
 
         def __shutdown__
-          return unless @actors
+          return unless defined?(@actors) && @actors
           # TODO: these can be nil if initializer crashes
           terminators = @actors.map do |actor|
             begin
@@ -121,7 +121,7 @@ module Celluloid
         def __busy
           @busy
         end
-        
+
         def __idle
           @idle
         end

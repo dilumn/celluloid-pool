@@ -1,29 +1,5 @@
 unless $CELLULOID_BACKPORTED == false
   RSpec.describe Celluloid::SupervisionGroup, actor_system: :global do
-    class SupervisionContainerHelper
-      QUEUE = Queue.new
-
-      # Keep it at 3 to better detect argument-passing issues
-      SIZE = 3
-    end
-
-    class MyPoolActor
-      include Celluloid
-
-      attr_reader :args
-      def initialize(*args)
-        @args = *args
-        ready
-      end
-
-      def running?
-        :yep
-      end
-
-      def ready
-        SupervisionContainerHelper::QUEUE << :done
-      end
-    end
 
     context "when supervising a 3-item pool pool" do
       let(:size) { SupervisionContainerHelper::SIZE }

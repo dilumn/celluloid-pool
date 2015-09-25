@@ -1,51 +1,13 @@
 unless $CELLULOID_BACKPORTED == false
   RSpec.describe "Celluloid.pool", actor_system: :global do
-    class ExampleError < StandardError; end
 
-    class MyWorker
-      include Celluloid
+    subject { MyPoolWorker.pool }
 
-      def process(queue = nil)
-        if queue
-          queue << :done
-        else
-          :done
-        end
-      end
-
-      def sleepy_work
-        t = Time.now.to_f
-        sleep 0.25
-        t
-      end
-
-      def crash
-        fail ExampleError, "zomgcrash"
-      end
-
-      protected
-
-      def a_protected_method
-      end
-
-      private
-
-      def a_private_method
-      end
-    end
-
-    def test_concurrency_of(pool)
-      baseline = Time.now.to_f
-      values = 10.times.map { pool.future.sleepy_work }.map(&:value)
-      values.select { |t| t - baseline < 0.1 }.length
-    end
-
-    subject { MyWorker.pool }
-
+    let(:logger) { Specs::FakeLogger.current }
     let(:crashes) { [] }
 
     context("BACKPORTED") do
-      before { allow(Celluloid::Internals::Logger).to receive(:crash) { |*args| crashes << args } }
+      before { allow(logger).to receive(:crash) { |*args| crashes << args } }
 
       after { fail "Unexpected crashes: #{crashes.inspect}" unless crashes.empty? }
 
@@ -60,8 +22,8 @@ unless $CELLULOID_BACKPORTED == false
       end
 
       it "handles crashes" do
-        allow(Celluloid::Internals::Logger).to receive(:crash)
-        expect { subject.crash }.to raise_error(ExampleError)
+        allow(logger).to receive(:crash).with("Actor crashed!", ExamplePoolError)
+        expect { subject.crash }.to raise_error(ExamplePoolError)
         expect(subject.process).to be :done
       end
 
@@ -89,7 +51,7 @@ unless $CELLULOID_BACKPORTED == false
       context "#size=" do
         let(:initial_size) { 3 } # anything other than 2 or 4 or too big on Travis
 
-        subject { MyWorker.pool size: initial_size }
+        subject { MyPoolWorker.pool size: initial_size }
 
         it "should adjust the pool size up", flaky: true do
           expect(test_concurrency_of(subject)).to eq(initial_size)
@@ -110,7 +72,7 @@ unless $CELLULOID_BACKPORTED == false
       end
 
       context "when called synchronously" do
-        subject { MyWorker.pool }
+        subject { MyPoolWorker.pool }
 
         it { is_expected.to respond_to(:process) }
         it { is_expected.to respond_to(:inspect) }
@@ -127,13 +89,11 @@ unless $CELLULOID_BACKPORTED == false
       end
 
       context "when called asynchronously" do
-        subject { MyWorker.pool.async }
+        subject { MyPoolWorker.pool.async }
 
         context "with incorrect invocation" do
-          let(:logger) { double(:logger) }
 
           before do
-            stub_const("Celluloid::Internals::Logger", logger)
             allow(logger).to receive(:crash)
             allow(logger).to receive(:warn)
             allow(logger).to receive(:with_backtrace) do |*args, &block|
