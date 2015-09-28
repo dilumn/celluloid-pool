@@ -94,14 +94,13 @@ unless $CELLULOID_BACKPORTED == false
           end
         end
 
-        it "logs ArgumentError exception", flaky: true do
+        it "logs ArgumentError exception", retry: Specs::ALLOW_RETRIES, flaky: true do
           expect(logger).to receive(:crash).with(
             anything,
             instance_of(ArgumentError))
 
           subject.process(:something, :one_argument_too_many)
-          sleep 0.001 # Let Celluloid do it's async magic
-          sleep 0.1 if RUBY_PLATFORM == "java"
+          sleep 0.1 # async hax
         end
       end
 
