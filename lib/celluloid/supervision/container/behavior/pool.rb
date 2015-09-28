@@ -47,9 +47,9 @@ module Celluloid
         include Behavior
 
         class << self
-          def pooling_options(config={},mixins={})
-            combined = { :type => Celluloid::Supervision::Container::Pool }.merge(config).merge(mixins)
-            combined[:args] = [[:block, :actors, :size, :args].inject({}) { |e,p| e[p] = combined.delete(p) if combined[p]; e }]
+          def pooling_options(config={}, mixins={})
+            combined = {type: Celluloid::Supervision::Container::Pool}.merge(config).merge(mixins)
+            combined[:args] = [[:block, :actors, :size, :args].inject({}) { |e, p| e[p] = combined.delete(p) if combined[p]; e }]
             combined
           end
         end
@@ -64,8 +64,6 @@ module Celluloid
           @configuration
         end
       end
-
-      
     end
   end
 end

@@ -1,6 +1,5 @@
 unless $CELLULOID_BACKPORTED == false
   RSpec.describe Celluloid::SupervisionGroup, actor_system: :global do
-
     context "when supervising a 3-item pool pool" do
       let(:size) { SupervisionContainerHelper::SIZE }
 
