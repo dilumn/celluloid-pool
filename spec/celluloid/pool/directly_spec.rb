@@ -1,9 +1,7 @@
 RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
-
   let(:logger) { Specs::FakeLogger.current }
 
   context "when auditing actors directly, whether they are idle or not" do
-
     let(:size) { SupervisionContainerHelper::SIZE }
     before(:each) { subject { MyPoolActor.pool } }
 
@@ -40,7 +38,7 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
   end
 
   it "handles crashes" do
-    allow(logger).to receive(:crash) #de .with("Actor crashed!", ExamplePoolError)
+    allow(logger).to receive(:crash) # de .with("Actor crashed!", ExamplePoolError)
     expect { subject.crash }.to raise_error(ExamplePoolError)
     expect(subject.process).to be :done
   end
@@ -143,7 +141,6 @@ RSpec.describe Celluloid::Supervision::Container::Pool, actor_system: :global do
     subject { MyPoolWorker.pool.async }
 
     context "with incorrect invocation" do
-
       it "logs ArgumentError exception" do
         expect(logger).to receive(:crash).with(
           anything,

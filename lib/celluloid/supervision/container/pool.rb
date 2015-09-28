@@ -152,20 +152,20 @@ module Celluloid
             Thread.current[:celluloid_actor].handle_message(response)
           end
 
-          @mutex.synchronize {
+          @mutex.synchronize do
             actor = @idle.shift
             @busy << actor
             actor
-          }
+          end
         end
 
         # Spawn a new worker for every crashed one
         def __crash_handler__(actor, reason)
-          @mutex.synchronize {
+          @mutex.synchronize do
             @busy.delete actor
             @idle.delete actor
             @actors.delete actor
-          }
+          end
           return unless reason
 
           @idle << __spawn_actor__

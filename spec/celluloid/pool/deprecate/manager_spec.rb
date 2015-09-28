@@ -1,6 +1,5 @@
 unless $CELLULOID_BACKPORTED == false
   RSpec.describe "BACKPORTED Celluloid.pool", actor_system: :global do
-
     subject { MyPoolWorker.pool }
     let(:logger) { Specs::FakeLogger.current }
 
@@ -15,7 +14,7 @@ unless $CELLULOID_BACKPORTED == false
     end
 
     it "handles crashes" do
-      allow(logger).to receive(:crash) #de .with("Actor crashed!", ExamplePoolError)
+      allow(logger).to receive(:crash) # de .with("Actor crashed!", ExamplePoolError)
       expect { subject.crash }.to raise_error(ExamplePoolError)
       expect(subject.process).to be :done
     end
@@ -85,7 +84,6 @@ unless $CELLULOID_BACKPORTED == false
       subject { MyPoolWorker.pool.async }
 
       context "with incorrect invocation" do
-
         before do
           allow(logger).to receive(:crash)
           allow(logger).to receive(:warn)
