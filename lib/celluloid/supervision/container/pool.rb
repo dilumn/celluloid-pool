@@ -103,31 +103,27 @@ module Celluloid
         end
 
         def busy_size
-          @busy.length
+          @mutex.synchronize { @busy.length }
         end
 
         def idle_size
-          @idle.length
+          @mutex.synchronize { @idle.length }
         end
 
         def __idle?(actor)
-          @idle.include? actor
+          @mutex.synchronize { @idle.include? actor }
         end
 
         def __busy?(actor)
-          @busy.include? actor
+          @mutex.synchronize { @busy.include? actor }
         end
 
         def __busy
-          @busy
+          @mutex.synchronize { @busy }
         end
 
         def __idle
-          @idle
-        end
-
-        def __idling?
-          @mutex.synchronize { @idle.empty? }
+          @mutex.synchronize { @idle }
         end
 
         def __state(actor)
@@ -140,19 +136,20 @@ module Celluloid
         def __spawn_actor__
           actor = @klass.new_link(*@args)
           @mutex.synchronize { @actors.add(actor) }
+          @actors.add(actor)
           actor
         end
 
         # Provision a new actor ( take it out of idle, move it into busy, and avail it )
         def __provision_actor__
           Task.current.guard_warnings = true
-          while __idling?
-            # Wait for responses from one of the busy actors
-            response = exclusive { receive { |msg| msg.is_a?(Internals::Response) } }
-            Thread.current[:celluloid_actor].handle_message(response)
-          end
-
           @mutex.synchronize do
+            while @idle.empty?
+              # Wait for responses from one of the busy actors
+              response = exclusive { receive { |msg| msg.is_a?(Internals::Response) } }
+              Thread.current[:celluloid_actor].handle_message(response)
+            end
+
             actor = @idle.shift
             @busy << actor
             actor
@@ -161,13 +158,10 @@ module Celluloid
 
         # Spawn a new worker for every crashed one
         def __crash_handler__(actor, reason)
-          @mutex.synchronize do
-            @busy.delete actor
-            @idle.delete actor
-            @actors.delete actor
-          end
+          @busy.delete actor
+          @idle.delete actor
+          @actors.delete actor
           return unless reason
-
           @idle << __spawn_actor__
           signal :respawn_complete
         end
