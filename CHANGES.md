@@ -1,4 +1,4 @@
-0.20.5 (2015-09-28)
+0.20.5 (2015-09-30)
 -----
 * Resumed updating changelog. Not much as changed -- mostly keeping version sync with other gems.
 * Revamped test suite, using shared RSpec configuration layer provided by Celluloid itself.
